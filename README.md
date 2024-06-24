@@ -1,127 +1,113 @@
-# BankingContract
+# VotingContract
 
 ## Overview
 
-The `BankingContract` is a simple smart contract written in Solidity that simulates basic banking operations. It allows users to create accounts, deposit funds, withdraw funds, and transfer funds to other users. The contract includes safeguards and error handling using Solidity's `require()`, `assert()`, and `revert()` statements.
+The `VotingContract` is a smart contract written in Solidity that facilitates the creation and management of proposals and voting on those proposals. It allows an owner to create proposals, while users can vote on these proposals. The contract includes functionality to finalize proposals and various utility functions to interact with the contract.
 
 ## Features
 
-- Create a new account with an initial balance.
-- Deposit funds into an existing account.
-- Withdraw funds from an existing account.
-- Transfer funds between accounts.
-- Check the balance of the caller's account.
+- Create new proposals.
+- Vote on existing proposals.
+- Finalize proposals.
+- Check the total number of proposals.
+- View details of specific proposals.
 
 ## Usage
 
 ### Functions
 
-#### `creatAccount(uint _value) public returns (bool)`
+#### `createProposal(string memory _name, string memory _desc) public onlyOwner`
 
-Creates a new account with an initial balance specified by `_value`.
-
-- **Parameters**: 
-  - `_value`: The initial balance to be deposited in the new account.
-  
-- **Returns**: 
-  - `true` if the account is successfully created.
-  
-- **Requirements**:
-  - The caller must not already have an account.
-
-#### `deposit(uint _value) public onlyUsers returns (bool)`
-
-Deposits the specified `_value` into the caller's account.
+Creates a new proposal with the specified name and description.
 
 - **Parameters**: 
-  - `_value`: The amount to be deposited.
-  
-- **Returns**: 
-  - `true` if the deposit is successful.
+  - `_name`: The name of the proposal.
+  - `_desc`: The description of the proposal.
   
 - **Requirements**:
-  - The caller must have an existing account.
+  - Only the owner can call this function.
 
-#### `withdraw(uint _value) public onlyUsers returns (bool)`
+#### `vote(uint _proposalID) public`
 
-Withdraws the specified `_value` from the caller's account.
+Casts a vote for the specified proposal.
 
 - **Parameters**: 
-  - `_value`: The amount to be withdrawn.
-  
-- **Returns**: 
-  - `true` if the withdrawal is successful.
+  - `_proposalID`: The ID of the proposal to vote for.
   
 - **Requirements**:
-  - The caller must have an existing account.
-  - The caller's balance must be greater than or equal to `_value`.
+  - The caller must not have voted before.
+  - The proposal must not be finalized.
 
-#### `transfer(address _to, uint _value) public onlyUsers returns (bool)`
+#### `finalizeProposal(uint _proposalID) public onlyOwner`
 
-Transfers the specified `_value` from the caller's account to the account of `_to`.
+Finalizes the specified proposal, preventing further votes.
 
 - **Parameters**: 
-  - `_to`: The address of the recipient.
-  - `_value`: The amount to be transferred.
-  
-- **Returns**: 
-  - `true` if the transfer is successful.
+  - `_proposalID`: The ID of the proposal to finalize.
   
 - **Requirements**:
-  - The caller must have an existing account.
-  - The caller's balance must be greater than or equal to `_value`.
-  - The recipient must be a different address than the caller.
+  - Only the owner can call this function.
+  - The proposal must not be finalized.
+  - The proposal must exist and have at least one vote.
 
-#### `getBalance() public view returns (uint)`
+#### `totalProposals() public view returns (uint)`
 
-Returns the balance of the caller's account.
+Returns the total number of proposals.
 
 - **Returns**: 
-  - The balance of the caller's account.
+  - The total number of proposals (excluding the initial count).
+
+#### `getProposal(uint _proposalID) public view returns (Proposal memory)`
+
+Returns the details of the specified proposal.
+
+- **Parameters**: 
+  - `_proposalID`: The ID of the proposal to retrieve.
+  
+- **Returns**: 
+  - The details of the proposal.
   
 - **Requirements**:
-  - The caller must have an existing account.
+  - The proposal must exist.
+
 
 ### Modifiers
 
-#### `onlyUsers`
+#### `onlyOwner`
 
-Ensures that the caller has an existing account.
+Ensures that the caller is the owner of the contract.
 
 - **Requirements**:
-  - The caller must have an existing account.
-
-### Error Handling
-
-- `require(condition, message)`: Used to check conditions and throw an error with a message if the condition is not met.
-- `assert(condition)`: Used to check for conditions that should never occur. If the condition is false, the transaction is reverted.
-- `revert(message)`: Used to revert the transaction with a message if a specific condition is not met.
+  - The caller must be the owner of the contract.
 
 ### Example
 
-Below is an example of how to interact with the `BankingContract`:
+Below is an example of how to interact with the `VotingContract`:
 
 ```solidity
 // Deploy the contract
-BankingContract bankingContract = new BankingContract();
+VotingContract votingContract = new VotingContract();
 
-// Create an account with an initial balance of 1000
-bankingContract.creatAccount(1000);
+// Create a proposal (only owner can do this)
+votingContract.createProposal("Proposal 1", "Description of proposal 1");
 
-// Deposit 500 into the account
-bankingContract.deposit(500);
+// Cast a vote for proposal ID 1
+votingContract.vote(1);
 
-// Check the balance
-uint balance = bankingContract.getBalance(); // Should return 1500
+// Check the total number of proposals
+uint totalProposals = votingContract.totalProposals(); // Should return 1
 
-// Withdraw 200 from the account
-bankingContract.withdraw(200);
+// Get details of proposal ID 1
+Proposal memory proposal = votingContract.getProposal(1);
 
-// Transfer 300 to another address
-bankingContract.transfer(anotherAddress, 300);
+// Finalize the proposal (only owner can do this)
+votingContract.finalizeProposal(1);
 
-// Check the balance again
-balance = bankingContract.getBalance(); // Should return 1000
+// Multiply two numbers
+uint product = votingContract.multiply(3, 4); // Should return 12
+
+// Donate Ether to the contract
+votingContract.donate{value: 1 ether}();
 
 ```
 
