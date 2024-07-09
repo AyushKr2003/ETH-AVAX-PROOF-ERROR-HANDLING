@@ -1,115 +1,96 @@
-# VotingContract
+# Store Smart Contract
 
 ## Overview
 
-The `VotingContract` is a smart contract written in Solidity that facilitates the creation and management of proposals and voting on those proposals. It allows an owner to create proposals, while users can vote on these proposals. The contract includes functionality to finalize proposals and various utility functions to interact with the contract.
+The `store` smart contract is a simple Ethereum-based contract that allows users to place orders for an item called "Game Pass". Users can place an order by sending a specified amount of Ether (minimum 100 wei). Each order is assigned a unique ID, and users can also cancel their orders and get a refund.
 
 ## Features
 
-- Create new proposals.
-- Vote on existing proposals.
-- Finalize proposals.
-- Check the total number of proposals.
-- View details of specific proposals.
+- **Order Placement**: Users can place an order by sending Ether. Each order is assigned a unique ID.
+- **Order Cancellation**: Users can cancel their order and get a refund of the amount they sent.
+- **Order Tracking**: Users can check the order ID associated with their address.
 
-## Usage
+## Contract Details
 
-### Functions
+### Variables
+***
+- `address owner`: The owner of the contract (the deployer).
+- `string public itemName`: The name of the item, which is "Game Pass".
+- `mapping (address => uint) orderId`: A mapping to store the order ID associated with each address.
+- `mapping (uint => uint) public amount`: A mapping to store the amount sent with each order ID.
 
-#### `createProposal(string memory _name, string memory _desc) public onlyOwner`
-
-Creates a new proposal with the specified name and description.
-
-- **Parameters**: 
-  - `_name`: The name of the proposal.
-  - `_desc`: The description of the proposal.
-  
-- **Requirements**:
-  - Only the owner can call this function.
-
-#### `vote(uint _proposalID) public`
-
-Casts a vote for the specified proposal.
-
-- **Parameters**: 
-  - `_proposalID`: The ID of the proposal to vote for.
-  
-- **Requirements**:
-  - The caller must not have voted before.
-  - The proposal must not be finalized.
-
-#### `finalizeProposal(uint _proposalID) public onlyOwner`
-
-Finalizes the specified proposal, preventing further votes.
-
-- **Parameters**: 
-  - `_proposalID`: The ID of the proposal to finalize.
-  
-- **Requirements**:
-  - Only the owner can call this function.
-  - The proposal must not be finalized.
-  - The proposal must exist and have at least one vote.
-
-#### `totalProposals() public view returns (uint)`
-
-Returns the total number of proposals.
-
-- **Returns**: 
-  - The total number of proposals (excluding the initial count).
-
-#### `getProposal(uint _proposalID) public view returns (Proposal memory)`
-
-Returns the details of the specified proposal.
-
-- **Parameters**: 
-  - `_proposalID`: The ID of the proposal to retrieve.
-  
-- **Returns**: 
-  - The details of the proposal.
-  
-- **Requirements**:
-  - The proposal must exist.
-
-
-### Modifiers
-
-#### `onlyOwner`
-
-Ensures that the caller is the owner of the contract.
-
-- **Requirements**:
-  - The caller must be the owner of the contract.
-
-### Example
-
-Below is an example of how to interact with the `VotingContract`:
+### Constructor
+***
+The constructor sets the owner of the contract to the address that deploys the contract.
 
 ```solidity
-// Deploy the contract
-VotingContract votingContract = new VotingContract();
-
-// Create a proposal (only owner can do this)
-votingContract.createProposal("Proposal 1", "Description of proposal 1");
-
-// Cast a vote for proposal ID 1
-votingContract.vote(1);
-
-// Check the total number of proposals
-uint totalProposals = votingContract.totalProposals(); // Should return 1
-
-// Get details of proposal ID 1
-Proposal memory proposal = votingContract.getProposal(1);
-
-// Finalize the proposal (only owner can do this)
-votingContract.finalizeProposal(1);
-
-// Multiply two numbers
-uint product = votingContract.multiply(3, 4); // Should return 12
-
-// Donate Ether to the contract
-votingContract.donate{value: 1 ether}();
-
+constructor (){
+    owner = msg.sender;
+}
 ```
 
+## Functions
+
+### **random**
+An internal function that generates a random number based on the current block timestamp.
+
+```solidity
+function random() view internal returns (uint){
+    return uint(keccak256(abi.encode(block.timestamp)))%10000;
+}
+```
+### order
+A payable function that allows users to place an order. It requires a minimum of 100 wei and ensures that the user has not already placed an order.
+
+```solidity
+function order() public payable returns (string memory) {
+    require(orderId[msg.sender] == 0, "you have already ordered");
+    require(msg.value >= 100, "please send more than 100 wei");
+    orderId[msg.sender] = random();
+    amount[orderId[msg.sender]] = msg.value;
+    return "order received";
+}
+```
+### OrderID
+A public view function that returns the order ID associated with a given address. It reverts if the address has not placed an order.
+
+```solidity
+function OrderID(address _address) public view returns (uint) {
+    if (orderId[_address] == 0) {
+        revert("you have not ordered");
+    }
+    return orderId[_address];
+}
+```
+### cancelOrder
+A public function that allows users to cancel their order and get a refund. It ensures that the user has placed an order and that the amount is non-zero before proceeding with the refund.
+
+```solidity
+function cancelOrder() public {
+    require(orderId[msg.sender] != 0, "you have not ordered");
+    if (amount[orderId[msg.sender]] == 0) {
+        revert("Your amount is zero");
+    }
+    payable(msg.sender).transfer(amount[orderId[msg.sender]]);
+    amount[orderId[msg.sender]] = 0;
+    orderId[msg.sender] = 0;
+
+    assert(amount[orderId[msg.sender]] == 0);
+    assert(orderId[msg.sender] == 0);
+}
+```
+## Usage
+### Deploying the Contract
+ - Deploy the contract using an Ethereum-compatible development environment such as Remix, Truffle, or Hardhat.
+ - Once deployed, the deployer address will be set as the owner of the contract.
+### Placing an Order
+To place an order, call the `order` function and send at least 100 wei along with the transaction. If successful, the function will return "order received" and assign a unique order ID to your address.
+
+### Checking Order ID
+To check the order ID associated with your address, call the `OrderID` function with your address as the parameter. If you have placed an order, it will return the order ID; otherwise, it will revert with "you have not ordered".
+
+### Cancelling an Order
+To cancel your order and receive a refund, call the `cancelOrder` function. The function will transfer the amount back to your address and reset your order ID and amount to zero.
+
 ## License
-This project is licensed under the UNLICENSED License.
+This project is licensed under the MIT License. See the LICENSE file for details.
